@@ -46,10 +46,25 @@ pipeline {
             }
         }
 
+        stage('Verificar Archivo JAR') {
+            steps {
+                script {
+                    try {
+                        // Verificar que el archivo JAR existe en el directorio target
+                        sh 'ls -alh target/*.jar'
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "El archivo JAR no se ha generado correctamente: ${e.message}"
+                    }
+                }
+            }
+        }
+
         stage('Construir Imagen Docker') {
             steps {
                 script {
                     try {
+                        // Asegurarse de que el archivo JAR tiene el nombre correcto antes de construir la imagen
                         sh "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} -t ${DOCKER_IMAGE} ."
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
