@@ -69,30 +69,20 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Verificar si el contenedor con el nombre específico ya existe
-                        def containerExists = sh(script: "docker ps -a -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
-                        if (containerExists) {
-                            echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo..."
-                            // Detener el contenedor existente
-                            sh "docker stop ${DOCKER_CONTAINER_NAME}"
-                            sh "docker rm ${DOCKER_CONTAINER_NAME}"
+                        // Verificar si el puerto 8082 está siendo utilizado por algún contenedor
+                        def containerUsingPort = sh(script: "docker ps -q -f publish=8082", returnStdout: true).trim()
+
+                        if (containerUsingPort) {
+                            echo "El puerto 8082 está siendo utilizado por el contenedor: ${containerUsingPort}. Deteniéndolo..."
+                            // Detener y eliminar el contenedor que usa el puerto 8082
+                            sh "docker stop ${containerUsingPort}"
+                          //  sh "docker rm ${containerUsingPort}"
                         } else {
-                            echo "El contenedor ${DOCKER_CONTAINER_NAME} no existe. Procediendo a crear uno nuevo..."
+                            echo "El puerto 8082 no está siendo utilizado por ningún contenedor."
                         }
 
-                        // Verificar si el puerto 8082 está en uso y detener el contenedor que lo esté usando
-                        def portInUse = sh(script: "docker ps -q -f publish=8082", returnStatus: true) == 0
-                        if (portInUse) {
-                            echo "El puerto 8082 está en uso. Deteniendo el contenedor en el puerto..."
-                            def containerUsingPort = sh(script: "docker ps -q -f publish=8082", returnStdout: true).trim()
-                            if (containerUsingPort) {
-                                echo "Deteniendo el contenedor que está usando el puerto 8082: ${containerUsingPort}"
-                                sh "docker stop ${containerUsingPort}"
-                             //   sh "docker rm ${containerUsingPort}"
-                            }
-                        }
-
-                        // Correr el nuevo contenedor con un nombre único
+                        // Correr el nuevo contenedor con un nombre único y el puerto 8082
+                        echo "Iniciando el contenedor con el nuevo JAR..."
                         sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
