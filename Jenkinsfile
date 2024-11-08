@@ -82,29 +82,28 @@ pipeline {
             }
         }
 
-        stage('Desplegar Aplicación') {
+        stage('Verificar Contenedor Existente y Desplegar Aplicación') {
             steps {
                 script {
                     try {
-                        // Verificar si el puerto 8082 está siendo utilizado por algún contenedor
-                        def containerUsingPort = sh(script: "docker ps --filter 'publish=8082' -q", returnStdout: true).trim()
+                        // Verificar si ya existe un contenedor con el nombre especificado
+                        def existingContainer = sh(script: "docker ps -q --filter 'name=${DOCKER_CONTAINER_NAME}'", returnStdout: true).trim()
 
-                        if (containerUsingPort) {
-                            echo "El puerto 8082 está siendo utilizado por el contenedor: ${containerUsingPort}. Deteniéndolo..."
-                            // Detener y eliminar el contenedor que usa el puerto 8082
-                            sh "docker stop ${containerUsingPort}"
-                            sh "docker rm ${containerUsingPort}"
+                        if (existingContainer) {
+                            echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo..."
+                            // Detener el contenedor existente
+                            sh "docker stop ${existingContainer}"
+                            sh "docker rm ${existingContainer}"
                         } else {
-                            echo "El puerto 8082 no está siendo utilizado por ningún contenedor."
+                            echo "No existe un contenedor con el nombre ${DOCKER_CONTAINER_NAME}. Procediendo a crear uno nuevo."
                         }
 
                         // Iniciar el nuevo contenedor con el nombre único y el puerto 8082
                         echo "Iniciando el contenedor con el nuevo JAR..."
                         sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
-
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
-                        error "Error al desplegar la aplicación Docker: ${e.message}"
+                        error "Error al verificar o desplegar el contenedor Docker: ${e.message}"
                     }
                 }
             }
@@ -128,7 +127,7 @@ pipeline {
         }
 
         failure {
-            echo '\033[31m¡Hubo un error durant e la ejecución del pipeline!\033[0m'
+            echo '\033[31m¡Hubo un error durante la ejecución del pipeline!\033[0m'
         }
     }
 }
