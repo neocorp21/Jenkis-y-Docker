@@ -66,25 +66,10 @@ pipeline {
             }
         }
 
-        stage('Instalar Herramientas Requeridas') {
-            steps {
-                script {
-                    try {
-                        echo "Instalando lsof para verificar puertos..."
-                        sh "apt-get update && apt-get install -y lsof"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Error al instalar lsof: ${e.message}"
-                    }
-                }
-            }
-        }
-
         stage('Construir Imagen Docker') {
             steps {
                 script {
                     try {
-                        // Asegúrate de que el Dockerfile esté en el directorio raíz del proyecto
                         echo "Construyendo la imagen Docker..."
                         // Usar el nombre del archivo JAR generado en el paso anterior
                         sh "docker build -t ${DOCKER_IMAGE} --build-arg JAR_FILE=${env.JAR_FILE} ."
@@ -101,31 +86,26 @@ pipeline {
                 script {
                     try {
                         // Verificar si ya existe un contenedor con el nombre especificado
-                        def existingContainer = sh(script: "docker ps -q --filter 'name=${DOCKER_CONTAINER_NAME}'", returnStdout: true).trim()
+                        def existingContainer = sh(script: "docker ps -a -q --filter 'name=${DOCKER_CONTAINER_NAME}'", returnStdout: true).trim()
 
                         if (existingContainer) {
                             echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo y eliminándolo..."
-                            // Detener el contenedor existente
-                            sh "docker stop ${existingContainer}"
-                            sh "docker rm ${existingContainer}"
+                            sh "docker stop ${existingContainer} || true"
+                            sh "docker rm ${existingContainer} || true"
                         } else {
                             echo "No existe un contenedor con el nombre ${DOCKER_CONTAINER_NAME}. Procediendo a crear uno nuevo."
                         }
 
-                        // Verificar si el puerto 8082 está en uso
-                        def portInUse = sh(script: "lsof -i :8082 || true", returnStdout: true).trim()
+                        // Verificar si el puerto 8082 está en uso y detener el contenedor que lo está usando
+                        def portInUse = sh(script: "docker ps --filter 'publish=8082' -q", returnStdout: true).trim()
                         if (portInUse) {
-                            echo "El puerto 8082 está en uso. Deteniendo el contenedor y liberando el puerto..."
-                            // Detener el contenedor que está utilizando el puerto 8082
-                            def containerUsingPort = sh(script: "docker ps -q --filter 'publish=8082'", returnStdout: true).trim()
-                            if (containerUsingPort) {
-                                sh "docker stop ${containerUsingPort}"
-                                sh "docker rm ${containerUsingPort}" // Descomentarlo si es necesario eliminar el contenedor también
-                            }
+                            echo "El puerto 8082 está en uso. Deteniendo el contenedor que lo está usando..."
+                            sh "docker stop ${portInUse}"
+                            sh "docker rm ${portInUse}"
                         }
 
                         // Iniciar el nuevo contenedor con el nombre único y el puerto 8082
-                        echo "Iniciando el contenedor con el nuevo JAR..."
+                        echo "Iniciando el contenedor con la nueva imagen..."
                         sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
@@ -140,8 +120,8 @@ pipeline {
         always {
             script {
                 try {
-                    // Limpieza de recursos no utilizados
-                    //sh 'docker system prune -af'
+                    echo "Limpieza de recursos no utilizados..."
+                    sh 'docker system prune -af'
                 } catch (Exception e) {
                     echo "Error al ejecutar docker system prune: ${e.message}"
                 }
