@@ -51,7 +51,12 @@ pipeline {
                 script {
                     try {
                         // Verificar que el archivo JAR existe en el directorio target
-                        sh 'ls -alh target/*.jar'
+                        def jarFile = sh(script: 'ls -1 target/*.jar', returnStdout: true).trim()
+                        if (jarFile) {
+                            echo "Archivo JAR encontrado: ${jarFile}"
+                        } else {
+                            error "No se encontró el archivo JAR en el directorio target."
+                        }
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "El archivo JAR no se ha generado correctamente: ${e.message}"
@@ -59,27 +64,6 @@ pipeline {
                 }
             }
         }
-
-   stage('Verificar Archivo JAR') {
-       steps {
-           script {
-               try {
-                   sh 'ls -la target/'  // Listar todos los archivos en target
-                   def jarFile = sh(script: 'ls -1 target/*.jar', returnStdout: true).trim()
-                   if (jarFile) {
-                       echo "Archivo JAR encontrado: ${jarFile}"
-                   } else {
-                       error "No se encontró el archivo JAR en el directorio target."
-                   }
-               } catch (Exception e) {
-                   currentBuild.result = 'FAILURE'
-                   error "El archivo JAR no se ha generado correctamente: ${e.message}"
-               }
-           }
-       }
-   }
-
-
 
         stage('Desplegar Aplicación') {
             steps {
