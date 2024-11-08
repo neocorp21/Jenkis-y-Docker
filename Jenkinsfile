@@ -15,7 +15,7 @@ pipeline {
         stage('Actualizar Versión del Artefacto') {
             steps {
                 script {
-                    // Cambiar la versión del artefacto en el pom.xml usando el número de construcción de Jenkins
+                    // Cambiar versión en el pom.xml (verifica que el cambio se aplique)
                     sh "mvn versions:set -DnewVersion=0.0.${env.BUILD_NUMBER}-SNAPSHOT"
                 }
             }
@@ -24,6 +24,7 @@ pipeline {
         stage('Construir JAR') {
             steps {
                 script {
+                    // Construir el JAR con Maven
                     sh 'mvn clean install'
                 }
             }
@@ -32,7 +33,7 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Construir la imagen Docker, pasando el número de build como argumento al Dockerfile
+                    // Construir imagen Docker con el número de build como argumento
                     sh "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} -t ${DOCKER_IMAGE} ."
                 }
             }
@@ -41,8 +42,10 @@ pipeline {
         stage('Desplegar Aplicación') {
             steps {
                 script {
+                    // Detener y eliminar cualquier contenedor con el nombre "demo-jenkins-app"
                     sh 'docker ps -q -f "name=demo-jenkins-app" | xargs -r docker stop | xargs -r docker rm -f'
-                    sh "docker run -d -p 8082:8082 --name demo ${DOCKER_IMAGE}"
+                    // Correr el nuevo contenedor
+                    sh "docker run -d -p 8082:8082 --name demo-jenkins-app ${DOCKER_IMAGE}"
                 }
             }
         }
@@ -58,7 +61,7 @@ pipeline {
         }
 
         failure {
-            echo '¡Hubo un error durante la ejecución del pipeline XD!'
+            echo '¡Hubo un error durante la ejecución del pipeline!'
         }
     }
 }
