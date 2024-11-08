@@ -39,11 +39,11 @@ pipeline {
         stage('Desplegar Aplicación') {
             steps {
                 script {
-                    // Verificar si ya hay un contenedor ejecutándose en el puerto 8082 y eliminarlo si es necesario
+                    // Verificar si el contenedor está utilizando el puerto 8082 y detenerlo si es necesario
                     def portInUse = sh(script: "docker ps -q -f publish=8082", returnStatus: true) == 0
                     if (portInUse) {
                         echo "El puerto 8082 está en uso. Deteniendo el contenedor en el puerto..."
-                        sh 'docker ps -q -f "publish=8082" | xargs -r docker stop | xargs -r docker rm -f'
+                        sh 'docker ps -q -f "publish=8082" | xargs -r docker stop'
                     }
 
                     // Correr el nuevo contenedor
