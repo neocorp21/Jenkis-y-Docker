@@ -60,19 +60,26 @@ pipeline {
             }
         }
 
-        stage('Construir Imagen Docker') {
-            steps {
-                script {
-                    try {
-                        // Asegurarse de que el archivo JAR tiene el nombre correcto antes de construir la imagen
-                        sh "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} -t ${DOCKER_IMAGE} ."
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Error al construir la imagen Docker: ${e.message}"
-                    }
-                }
-            }
-        }
+      stage('Construir Imagen Docker') {
+          steps {
+              script {
+                  try {
+                      // Verificar el nombre del archivo JAR y asegurarse de que exista
+                      def jarFile = sh(script: 'ls -1 target/*.jar', returnStdout: true).trim()
+                      if (!jarFile) {
+                          error "No se encontró el archivo JAR, abortando la construcción de la imagen Docker."
+                      }
+
+                      // Construir la imagen Docker
+                      sh "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} -t ${DOCKER_IMAGE} ."
+                  } catch (Exception e) {
+                      currentBuild.result = 'FAILURE'
+                      error "Error al construir la imagen Docker: ${e.message}"
+                  }
+              }
+          }
+      }
+
 
         stage('Desplegar Aplicación') {
             steps {
