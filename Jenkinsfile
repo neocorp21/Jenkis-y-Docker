@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         // La versión se actualizará con el número de build de Jenkins
-        DOCKER_IMAGE = 'demo:${env.BUILD_NUMBER}'
+        DOCKER_IMAGE = "demo:${env.BUILD_NUMBER}"  // Usar comillas dobles para interpolar correctamente la variable
     }
 
     stages {
@@ -35,8 +35,8 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Construir la imagen Docker usando el Dockerfile
-                    sh 'docker build -t ${DOCKER_IMAGE} .'
+                    // Construir la imagen Docker usando el Dockerfile, y usando el número de build de Jenkins
+                    sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
         }
@@ -49,7 +49,7 @@ pipeline {
                     sh 'docker ps -q -f "name=demo-jenkins-app" | xargs -r docker stop | xargs -r docker rm -f'
 
                     // Ejecutar el contenedor de la nueva imagen
-                    sh 'docker run -d -p 8082:8082 --name demo ${DOCKER_IMAGE}'
+                    sh "docker run -d -p 8082:8082 --name demo ${DOCKER_IMAGE}"
                 }
             }
         }
