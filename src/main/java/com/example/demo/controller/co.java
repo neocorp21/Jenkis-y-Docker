@@ -8,6 +8,6 @@ public class co {
 
         @GetMapping("/hola")
         public String hola() {
-            return "Hola Mundo  desde Spring Boot Ded 2";
+            return "Prueba V2";
         }
 }
