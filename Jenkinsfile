@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Usar el BUILD_NUMBER de Jenkins para tener una etiqueta única en cada ejecución del pipeline
         DOCKER_IMAGE = "demo:0.0.1-${BUILD_NUMBER}"
         CONTAINER_NAME = 'demo-jenkins-app'
     }
@@ -25,7 +24,6 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Usar el BUILD_NUMBER en la etiqueta para asegurar una imagen única
                     sh "docker build -t ${DOCKER_IMAGE} ."
                 }
             }
@@ -34,23 +32,26 @@ pipeline {
         stage('Desplegar Aplicación') {
             steps {
                 script {
-                    // Detener el contenedor si ya está en ejecución
+                    // Detener y eliminar contenedor si ya existe
                     sh """
                         if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
                             echo "Deteniendo contenedor existente..."
                             docker stop ${CONTAINER_NAME}
-                        fi
-                    """
-
-                    // Remover el contenedor antiguo si existe (usando `docker rm` solo si es necesario)
-                    sh """
-                        if [ \$(docker ps -a -q -f name=${CONTAINER_NAME}) ]; then
-                            echo "Eliminando contenedor existente..."
                             docker rm ${CONTAINER_NAME}
                         fi
                     """
 
-                    // Iniciar el nuevo contenedor con la imagen actualizada
+                    // Verificar si el puerto 8082 está siendo usado
+                    sh """
+                        if lsof -i :8082; then
+                            echo "Puerto 8082 está en uso, liberando el puerto..."
+                            # Liberar el puerto si está en uso, detener el contenedor si es necesario
+                            docker ps -q -f "ancestor=${DOCKER_IMAGE}" | xargs -r docker stop
+                            docker ps -a -q -f "ancestor=${DOCKER_IMAGE}" | xargs -r docker rm -f
+                        fi
+                    """
+
+                    // Iniciar el contenedor con el puerto 8082
                     sh "docker run -d -p 8082:8082 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}"
                 }
             }
