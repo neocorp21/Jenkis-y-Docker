@@ -128,7 +128,7 @@ pipeline {
         }
 
         failure {
-            echo '\033[31m¡Hubo un error durante la ejecución del pipeline!\033[0m'
+            echo '\033[31m¡Hubo un error durant e la ejecución del pipeline!\033[0m'
         }
     }
 }
