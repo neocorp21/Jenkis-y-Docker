@@ -7,8 +7,11 @@ RUN apt-get update && apt-get install -y maven
 # Establecer el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
+# Argumento para el número de build de Jenkins
+ARG BUILD_NUMBER
+
 # Copiar el archivo JAR generado desde el directorio target al contenedor
-# Este será el nombre dinámico basado en la versión del artefacto
+# Usar el número de build para generar el nombre del archivo JAR
 COPY target/demo-${BUILD_NUMBER}.jar demo.jar
 
 # Exponer el puerto en el que se ejecutará la aplicación (usualmente 8080 en Spring Boot)
