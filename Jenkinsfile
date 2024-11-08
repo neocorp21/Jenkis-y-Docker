@@ -54,6 +54,7 @@ pipeline {
                         def jarFile = sh(script: 'ls -1 target/*.jar', returnStdout: true).trim()
                         if (jarFile) {
                             echo "Archivo JAR encontrado: ${jarFile}"
+                            env.JAR_FILE = jarFile // Guardar el nombre del archivo JAR para usarlo en la construcción del Dockerfile
                         } else {
                             error "No se encontró el archivo JAR en el directorio target."
                         }
@@ -71,7 +72,8 @@ pipeline {
                     try {
                         // Asegúrate de que el Dockerfile esté en el directorio raíz del proyecto
                         echo "Construyendo la imagen Docker..."
-                        sh "docker build -t ${DOCKER_IMAGE} ."
+                        // Usar el nombre del archivo JAR generado en el paso anterior
+                        sh "docker build -t ${DOCKER_IMAGE} --build-arg JAR_FILE=${env.JAR_FILE} ."
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Error al construir la imagen Docker: ${e.message}"

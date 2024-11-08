@@ -1,4 +1,3 @@
-# Usar imagen base de OpenJDK
 FROM openjdk:17-jdk-slim
 
 # Instalar Maven
@@ -14,7 +13,7 @@ ARG BUILD_NUMBER
 # Usar un patrón general para asegurar la copia del archivo JAR con el número de build
 COPY target/demo-${BUILD_NUMBER}.jar demo.jar
 
-# Exponer el puerto en el que se ejecutará la aplicación (usualmente 8080 en Spring Boot)
+# Exponer el puerto en el que se ejecutará la aplicación
 EXPOSE 8082
 
 # Comando para ejecutar el archivo JAR cuando el contenedor se inicie
