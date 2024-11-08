@@ -120,7 +120,7 @@ pipeline {
                             def containerUsingPort = sh(script: "docker ps -q --filter 'publish=8082'", returnStdout: true).trim()
                             if (containerUsingPort) {
                                 sh "docker stop ${containerUsingPort}"
-                                sh "docker rm ${containerUsingPort}"
+                               // sh "docker rm ${containerUsingPort}"
                             }
                         }
 
