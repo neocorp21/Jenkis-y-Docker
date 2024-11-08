@@ -15,7 +15,6 @@ pipeline {
         stage('Actualizar Versión del Artefacto') {
             steps {
                 script {
-                    // Cambiar versión en el pom.xml (verifica que el cambio se aplique)
                     sh "mvn versions:set -DnewVersion=0.0.${env.BUILD_NUMBER}-SNAPSHOT"
                 }
             }
@@ -24,7 +23,6 @@ pipeline {
         stage('Construir JAR') {
             steps {
                 script {
-                    // Construir el JAR con Maven
                     sh 'mvn clean install'
                 }
             }
@@ -33,7 +31,6 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    // Construir imagen Docker con el número de build como argumento
                     sh "docker build --build-arg BUILD_NUMBER=${env.BUILD_NUMBER} -t ${DOCKER_IMAGE} ."
                 }
             }
@@ -42,8 +39,13 @@ pipeline {
         stage('Desplegar Aplicación') {
             steps {
                 script {
-                    // Detener y eliminar cualquier contenedor con el nombre "demo-jenkins-app"
-                    sh 'docker ps -q -f "name=demo-jenkins-app" | xargs -r docker stop | xargs -r docker rm -f'
+                    // Verificar si ya hay un contenedor ejecutándose en el puerto 8082 y eliminarlo si es necesario
+                    def portInUse = sh(script: "docker ps -q -f publish=8082", returnStatus: true) == 0
+                    if (portInUse) {
+                        echo "El puerto 8082 está en uso. Deteniendo el contenedor en el puerto..."
+                        sh 'docker ps -q -f "publish=8082" | xargs -r docker stop | xargs -r docker rm -f'
+                    }
+
                     // Correr el nuevo contenedor
                     sh "docker run -d -p 8082:8082 --name demo-jenkins-app ${DOCKER_IMAGE}"
                 }
