@@ -58,7 +58,7 @@ pipeline {
         }
 
         failure {
-            echo '¡Hubo un error durante la ejecución del pipeline!'
+            echo '¡Hubo un error durante la ejecución del pipeline XD!'
         }
     }
 }
