@@ -2,20 +2,31 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "demo:0.0.1-${BUILD_NUMBER}"
-        CONTAINER_NAME = 'demo-jenkins-app'
+        // La versión se actualizará con el número de build de Jenkins
+        DOCKER_IMAGE = 'demo:${env.BUILD_NUMBER}'
     }
 
     stages {
         stage('Clonar Código') {
             steps {
+                // Clonar el repositorio desde GitHub, especificando la rama 'main'
                 git branch: 'main', url: 'https://github.com/neocorp21/pruebaxd.git'
+            }
+        }
+
+        stage('Actualizar Versión del Artefacto') {
+            steps {
+                script {
+                    // Cambiar la versión del artefacto en el pom.xml usando el número de construcción de Jenkins
+                    sh "mvn versions:set -DnewVersion=0.0.${env.BUILD_NUMBER}-SNAPSHOT"
+                }
             }
         }
 
         stage('Construir JAR') {
             steps {
                 script {
+                    // Ejecutar Maven para construir el JAR
                     sh 'mvn clean install'
                 }
             }
@@ -24,7 +35,8 @@ pipeline {
         stage('Construir Imagen Docker') {
             steps {
                 script {
-                    sh "docker build -t ${DOCKER_IMAGE} ."
+                    // Construir la imagen Docker usando el Dockerfile
+                    sh 'docker build -t ${DOCKER_IMAGE} .'
                 }
             }
         }
@@ -32,33 +44,23 @@ pipeline {
         stage('Desplegar Aplicación') {
             steps {
                 script {
-                    // Detener y eliminar contenedor si ya existe
-                    sh """
-                        if [ \$(docker ps -q -f name=${CONTAINER_NAME}) ]; then
-                            echo "Deteniendo contenedor existente..."
-                            docker stop ${CONTAINER_NAME}
-                            docker rm ${CONTAINER_NAME}
-                        fi
-                    """
+                    // Verificar si ya existe un contenedor en ejecución con el mismo nombre
+                    // Detener y eliminar el contenedor si ya está en ejecución
+                    sh 'docker ps -q -f "name=demo-jenkins-app" | xargs -r docker stop | xargs -r docker rm -f'
 
-                    // Verificar si el puerto 8082 está siendo usado
-                    sh """
-                        if lsof -i :8082; then
-                            echo "Puerto 8082 está en uso, liberando el puerto..."
-                            # Liberar el puerto si está en uso, detener el contenedor si es necesario
-                            docker ps -q -f "ancestor=${DOCKER_IMAGE}" | xargs -r docker stop
-                            docker ps -a -q -f "ancestor=${DOCKER_IMAGE}" | xargs -r docker rm -f
-                        fi
-                    """
-
-                    // Iniciar el contenedor con el puerto 8082
-                    sh "docker run -d -p 8082:8082 --name ${CONTAINER_NAME} ${DOCKER_IMAGE}"
+                    // Ejecutar el contenedor de la nueva imagen
+                    sh 'docker run -d -p 8082:8082 --name demo ${DOCKER_IMAGE}'
                 }
             }
         }
     }
 
     post {
+        always {
+            // Limpiar imágenes Docker antiguas si es necesario
+            sh 'docker system prune -af'
+        }
+
         success {
             echo '¡Pipeline ejecutado con éxito!'
         }
