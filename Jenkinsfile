@@ -67,30 +67,34 @@ pipeline {
 
         stage('Desplegar Aplicación') {
             steps {
-                   script {
-                       try {
-                           // Verificar si el contenedor con el nombre específico está en ejecución
-                           def containerExists = sh(script: "docker ps -a -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
-                           if (containerExists) {
-                               echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo..."
-                               sh "docker stop ${DOCKER_CONTAINER_NAME}"
-                               sh "docker rm ${DOCKER_CONTAINER_NAME}"
-                           }
+                script {
+                    try {
+                        // Verificar si el contenedor con el nombre específico está en ejecución
+                        def containerExists = sh(script: "docker ps -a -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
+                        if (containerExists) {
+                            echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo..."
+                            // Verificar si está en ejecución antes de detenerlo
+                            def containerRunning = sh(script: "docker ps -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
+                            if (containerRunning) {
+                                sh "docker stop ${DOCKER_CONTAINER_NAME}"
+                            }
+                            sh "docker rm ${DOCKER_CONTAINER_NAME}"
+                        }
 
-                           // Verificar si el puerto 8082 está en uso y detener el contenedor que lo esté usando
-                           def portInUse = sh(script: "docker ps -q -f publish=8082", returnStatus: true) == 0
-                           if (portInUse) {
-                               echo "El puerto 8082 está en uso. Deteniendo el contenedor en el puerto..."
-                               def containerUsingPort = sh(script: "docker ps -q -f publish=8082", returnStdout: true).trim()
-                               if (containerUsingPort) {
-                                   echo "Deteniendo el contenedor que está usando el puerto 8082: ${containerUsingPort}"
-                                   sh "docker stop ${containerUsingPort}"
-                                   sh "docker rm ${containerUsingPort}"
-                               }
-                           }
+                        // Verificar si el puerto 8082 está en uso y detener el contenedor que lo esté usando
+                        def portInUse = sh(script: "docker ps -q -f publish=8082", returnStatus: true) == 0
+                        if (portInUse) {
+                            echo "El puerto 8082 está en uso. Deteniendo el contenedor en el puerto..."
+                            def containerUsingPort = sh(script: "docker ps -q -f publish=8082", returnStdout: true).trim()
+                            if (containerUsingPort) {
+                                echo "Deteniendo el contenedor que está usando el puerto 8082: ${containerUsingPort}"
+                                sh "docker stop ${containerUsingPort}"
+                                sh "docker rm ${containerUsingPort}"
+                            }
+                        }
 
-                           // Correr el nuevo contenedor con un nombre único
-                           sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
+                        // Correr el nuevo contenedor con un nombre único
+                        sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Error al desplegar la aplicación Docker: ${e.message}"
