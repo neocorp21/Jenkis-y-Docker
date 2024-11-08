@@ -65,25 +65,41 @@ pipeline {
             }
         }
 
+        stage('Construir Imagen Docker') {
+            steps {
+                script {
+                    try {
+                        // Asegúrate de que el Dockerfile esté en el directorio raíz del proyecto
+                        echo "Construyendo la imagen Docker..."
+                        sh "docker build -t ${DOCKER_IMAGE} ."
+                    } catch (Exception e) {
+                        currentBuild.result = 'FAILURE'
+                        error "Error al construir la imagen Docker: ${e.message}"
+                    }
+                }
+            }
+        }
+
         stage('Desplegar Aplicación') {
             steps {
                 script {
                     try {
                         // Verificar si el puerto 8082 está siendo utilizado por algún contenedor
-                        def containerUsingPort = sh(script: "docker ps -q -f publish=8082", returnStdout: true).trim()
+                        def containerUsingPort = sh(script: "docker ps --filter 'publish=8082' -q", returnStdout: true).trim()
 
                         if (containerUsingPort) {
                             echo "El puerto 8082 está siendo utilizado por el contenedor: ${containerUsingPort}. Deteniéndolo..."
                             // Detener y eliminar el contenedor que usa el puerto 8082
                             sh "docker stop ${containerUsingPort}"
-                          //  sh "docker rm ${containerUsingPort}"
+                            sh "docker rm ${containerUsingPort}"
                         } else {
                             echo "El puerto 8082 no está siendo utilizado por ningún contenedor."
                         }
 
-                        // Correr el nuevo contenedor con un nombre único y el puerto 8082
+                        // Iniciar el nuevo contenedor con el nombre único y el puerto 8082
                         echo "Iniciando el contenedor con el nuevo JAR..."
                         sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
+
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Error al desplegar la aplicación Docker: ${e.message}"
