@@ -11,8 +11,8 @@ WORKDIR /app
 ARG BUILD_NUMBER
 
 # Copiar el archivo JAR generado desde el directorio target al contenedor
-# Usar un patrón general para asegurar la copia del archivo JAR
-COPY target/*.jar demo.jar
+# Usar un patrón general para asegurar la copia del archivo JAR con el número de build
+COPY target/demo-${BUILD_NUMBER}.jar demo.jar
 
 # Exponer el puerto en el que se ejecutará la aplicación (usualmente 8080 en Spring Boot)
 EXPOSE 8082

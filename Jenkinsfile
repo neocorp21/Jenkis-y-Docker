@@ -93,6 +93,7 @@ pipeline {
         always {
             script {
                 try {
+                    // Limpieza de recursos no utilizados
                     sh 'docker system prune -af'
                 } catch (Exception e) {
                     echo "Error al ejecutar docker system prune: ${e.message}"
