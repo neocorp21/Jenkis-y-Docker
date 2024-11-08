@@ -1,20 +1,18 @@
+# Usa una imagen base con OpenJDK 17
 FROM openjdk:17-jdk-slim
 
-# Instalar Maven
+# Actualiza los paquetes e instala Maven
 RUN apt-get update && apt-get install -y maven
 
-# Establecer el directorio de trabajo dentro del contenedor
+# Define el directorio de trabajo en la imagen
 WORKDIR /app
 
-# Argumento para el número de build de Jenkins
-ARG BUILD_NUMBER
+# Copia el archivo JAR desde el contexto de construcción (el nombre se pasa como argumento)
+ARG JAR_FILE
+COPY ${JAR_FILE} demo.jar
 
-# Copiar el archivo JAR generado desde el directorio target al contenedor
-# Usar un patrón general para asegurar la copia del archivo JAR con el número de build
-COPY target/demo-${BUILD_NUMBER}.jar demo.jar
-
-# Exponer el puerto en el que se ejecutará la aplicación
+# Expone el puerto 8082
 EXPOSE 8082
 
-# Comando para ejecutar el archivo JAR cuando el contenedor se inicie
+# Ejecuta la aplicación
 ENTRYPOINT ["java", "-jar", "demo.jar"]
