@@ -69,16 +69,15 @@ pipeline {
             steps {
                 script {
                     try {
-                        // Verificar si el contenedor con el nombre específico está en ejecución
+                        // Verificar si el contenedor con el nombre específico ya existe
                         def containerExists = sh(script: "docker ps -a -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
                         if (containerExists) {
                             echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo..."
-                            // Verificar si está en ejecución antes de detenerlo
-                            def containerRunning = sh(script: "docker ps -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
-                            if (containerRunning) {
-                                sh "docker stop ${DOCKER_CONTAINER_NAME}"
-                            }
+                            // Detener el contenedor existente
+                            sh "docker stop ${DOCKER_CONTAINER_NAME}"
                             sh "docker rm ${DOCKER_CONTAINER_NAME}"
+                        } else {
+                            echo "El contenedor ${DOCKER_CONTAINER_NAME} no existe. Procediendo a crear uno nuevo..."
                         }
 
                         // Verificar si el puerto 8082 está en uso y detener el contenedor que lo esté usando
