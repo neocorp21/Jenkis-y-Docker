@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = "demo:${env.BUILD_NUMBER}"
+        DOCKER_CONTAINER_NAME = "demo-jenkins-app-${env.BUILD_NUMBER}"  // Nombre único para el contenedor
     }
 
     stages {
@@ -39,15 +40,23 @@ pipeline {
         stage('Desplegar Aplicación') {
             steps {
                 script {
-                    // Verificar si el contenedor está utilizando el puerto 8082 y detenerlo si es necesario
+                    // Verificar si el contenedor con el nombre específico está en ejecución
+                    def containerExists = sh(script: "docker ps -q -f name=${DOCKER_CONTAINER_NAME}", returnStatus: true) == 0
+                    if (containerExists) {
+                        echo "El contenedor ${DOCKER_CONTAINER_NAME} ya está en ejecución. Deteniéndolo..."
+                        sh "docker stop ${DOCKER_CONTAINER_NAME}"
+                        sh "docker rm ${DOCKER_CONTAINER_NAME}"
+                    }
+
+                    // Verificar si el puerto 8082 está en uso y detener el contenedor si es necesario
                     def portInUse = sh(script: "docker ps -q -f publish=8082", returnStatus: true) == 0
                     if (portInUse) {
                         echo "El puerto 8082 está en uso. Deteniendo el contenedor en el puerto..."
                         sh 'docker ps -q -f "publish=8082" | xargs -r docker stop'
                     }
 
-                    // Correr el nuevo contenedor
-                    sh "docker run -d -p 8082:8082 --name demo-jenkins-app ${DOCKER_IMAGE}"
+                    // Correr el nuevo contenedor con un nombre único
+                    sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
                 }
             }
         }
