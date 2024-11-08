@@ -8,7 +8,8 @@ RUN apt-get update && apt-get install -y maven
 WORKDIR /app
 
 # Copiar el archivo JAR generado desde el directorio target al contenedor
-COPY target/demo-0.0.1-SNAPSHOT.jar demo.jar
+# Este será el nombre dinámico basado en la versión del artefacto
+COPY target/demo-${BUILD_NUMBER}.jar demo.jar
 
 # Exponer el puerto en el que se ejecutará la aplicación (usualmente 8080 en Spring Boot)
 EXPOSE 8082
