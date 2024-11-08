@@ -85,26 +85,38 @@ pipeline {
         stage('Verificar Contenedor Existente y Desplegar Aplicación') {
             steps {
                 script {
-                    try {
-                        // Verificar si ya existe un contenedor con el nombre especificado
-                        def existingContainer = sh(script: "docker ps -q --filter 'name=${DOCKER_CONTAINER_NAME}'", returnStdout: true).trim()
+                     try {
+                                    // Verificar si ya existe un contenedor con el nombre especificado
+                                    def existingContainer = sh(script: "docker ps -q --filter 'name=${DOCKER_CONTAINER_NAME}'", returnStdout: true).trim()
 
-                        if (existingContainer) {
-                            echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo..."
-                            // Detener el contenedor existente
-                            sh "docker stop ${existingContainer}"
-                            sh "docker rm ${existingContainer}"
-                        } else {
-                            echo "No existe un contenedor con el nombre ${DOCKER_CONTAINER_NAME}. Procediendo a crear uno nuevo."
-                        }
+                                    if (existingContainer) {
+                                        echo "El contenedor ${DOCKER_CONTAINER_NAME} ya existe. Deteniéndolo y eliminándolo..."
+                                        // Detener el contenedor existente
+                                        sh "docker stop ${existingContainer}"
+                                        sh "docker rm ${existingContainer}"
+                                    } else {
+                                        echo "No existe un contenedor con el nombre ${DOCKER_CONTAINER_NAME}. Procediendo a crear uno nuevo."
+                                    }
 
-                        // Iniciar el nuevo contenedor con el nombre único y el puerto 8082
-                        echo "Iniciando el contenedor con el nuevo JAR..."
-                        sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
-                    } catch (Exception e) {
-                        currentBuild.result = 'FAILURE'
-                        error "Error al verificar o desplegar el contenedor Docker: ${e.message}"
-                    }
+                                    // Verificar si el puerto 8082 está en uso
+                                    def portInUse = sh(script: "lsof -i :8082", returnStdout: true).trim()
+                                    if (portInUse) {
+                                        echo "El puerto 8082 está en uso. Deteniendo el contenedor y liberando el puerto..."
+                                        // Detener el contenedor que está utilizando el puerto 8082
+                                        def containerUsingPort = sh(script: "docker ps -q --filter 'publish=8082'", returnStdout: true).trim()
+                                        if (containerUsingPort) {
+                                            sh "docker stop ${containerUsingPort}"
+                                            sh "docker rm ${containerUsingPort}"
+                                        }
+                                    }
+
+                                    // Iniciar el nuevo contenedor con el nombre único y el puerto 8082
+                                    echo "Iniciando el contenedor con el nuevo JAR..."
+                                    sh "docker run -d -p 8082:8082 --name ${DOCKER_CONTAINER_NAME} ${DOCKER_IMAGE}"
+                                } catch (Exception e) {
+                                    currentBuild.result = 'FAILURE'
+                                    error "Error al verificar o desplegar el contenedor Docker: ${e.message}"
+                                }
                 }
             }
         }
@@ -115,7 +127,7 @@ pipeline {
             script {
                 try {
                     // Limpieza de recursos no utilizados
-                    sh 'docker system prune -af'
+                  //  sh 'docker system prune -af'
                 } catch (Exception e) {
                     echo "Error al ejecutar docker system prune: ${e.message}"
                 }
