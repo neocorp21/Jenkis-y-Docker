@@ -113,14 +113,14 @@ pipeline {
                         }
 
                         // Verificar si el puerto 8082 está en uso
-                        def portInUse = sh(script: "lsof -i :8082", returnStdout: true).trim()
+                        def portInUse = sh(script: "lsof -i :8082 || true", returnStdout: true).trim()
                         if (portInUse) {
                             echo "El puerto 8082 está en uso. Deteniendo el contenedor y liberando el puerto..."
                             // Detener el contenedor que está utilizando el puerto 8082
                             def containerUsingPort = sh(script: "docker ps -q --filter 'publish=8082'", returnStdout: true).trim()
                             if (containerUsingPort) {
                                 sh "docker stop ${containerUsingPort}"
-                               // sh "docker rm ${containerUsingPort}"
+                                // sh "docker rm ${containerUsingPort}" // Descomentarlo si es necesario eliminar el contenedor también
                             }
                         }
 
