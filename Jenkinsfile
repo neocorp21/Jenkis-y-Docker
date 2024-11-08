@@ -88,7 +88,7 @@ pipeline {
                             if (containerUsingPort) {
                                 echo "Deteniendo el contenedor que está usando el puerto 8082: ${containerUsingPort}"
                                 sh "docker stop ${containerUsingPort}"
-                                sh "docker rm ${containerUsingPort}"
+                             //   sh "docker rm ${containerUsingPort}"
                             }
                         }
 
