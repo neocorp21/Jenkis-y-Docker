@@ -2,7 +2,9 @@
 FROM openjdk:17-jdk-slim
 
 # Actualiza los paquetes e instala Maven
-RUN apt-get update && apt-get install -y maven
+RUN apt-get update && apt-get install -y maven && \
+    rm -rf /var/lib/apt/lists/*
+
 
 # Define el directorio de trabajo en la imagen
 WORKDIR /app

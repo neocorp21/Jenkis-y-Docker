@@ -24,8 +24,7 @@ pipeline {
             steps {
                 script {
                     try {
-                    sh "mvn clean install"
-                       // sh "mvn versions:set -DnewVersion=0.0.${env.BUILD_NUMBER}-SNAPSHOT"
+                    sh "mvn versions:set -DnewVersion=0.0.${env.BUILD_NUMBER}-SNAPSHOT"
                     } catch (Exception e) {
                         currentBuild.result = 'FAILURE'
                         error "Error al actualizar la versión del artefacto: ${e.message}"
