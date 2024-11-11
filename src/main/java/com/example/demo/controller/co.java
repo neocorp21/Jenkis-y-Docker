@@ -8,6 +8,6 @@ public class co {
 
         @GetMapping("/hola")
         public String hola() {
-            return "Prueba V5";
+            return "Prueba V6";
         }
 }
